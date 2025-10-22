@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор актов</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 2rem;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: .5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        textarea {
+            padding: .75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .radio-group label, .checkbox-group label {
+            font-weight: normal;
+        }
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        input[type="submit"] {
+            grid-column: 1 / -1;
+            padding: .75rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        @media (max-width: 768px) {
+            form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Генератор актов</h1>
+        <form action="/generate" method="post">
+            <div class="form-group">
+                <label for="notice_date">Дата в извещении:</label>
+                <input type="date" id="notice_date" name="notice_date">
+            </div>
+            <div class="form-group">
+                <label for="request_number">Номер заявки:</label>
+                <input type="text" id="request_number" name="request_number">
+            </div>
+            <div class="form-group full-width">
+                <label for="customer_name">Наименование заказчика:</label>
+                <input type="text" id="customer_name" name="customer_name">
+            </div>
+            <div class="form-group">
+                <label for="object_name">Объект:</label>
+                <input type="text" id="object_name" name="object_name" placeholder="5601-PB-01">
+            </div>
+            <div class="form-group">
+                <label for="position">Положение:</label>
+                <input type="text" id="position" name="position" placeholder="KM 2.44 Ось A/37">
+            </div>
+            <div class="form-group full-width">
+                <label>Вид работ:</label>
+                <div class="radio-group">
+                    <input type="radio" id="montaj" name="work_type" value="монтаж">
+                    <label for="montaj">Монтаж</label>
+                    <input type="radio" id="demontaj" name="work_type" value="демонтаж">
+                    <label for="demontaj">Демонтаж</label>
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label>Тип лесов:</label>
+                <div class="radio-group">
+                    <input type="radio" id="type1_1" name="scaffold_type" value="Тип-1.1">
+                    <label for="type1_1">Тип-1.1 (V = Д×Ш×В)</label>
+                    <input type="radio" id="type2_1" name="scaffold_type" value="Тип-2.1">
+                    <label for="type2_1">Тип-2.1 (S = Д×В)</label>
+                    <input type="radio" id="type4" name="scaffold_type" value="Тип-4">
+                    <label for="type4">Тип-4 (S = Д×Ш)</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="length">Длина (м):</label>
+                <input type="number" id="length" name="length" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="width">Ширина (м):</label>
+                <input type="number" id="width" name="width" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="height">Высота (м):</label>
+                <input type="number" id="height" name="height" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="height_mark">Отметка высоты:</label>
+                <input type="text" id="height_mark" name="height_mark" placeholder="H+20">
+            </div>
+            <div class="form-group full-width checkbox-group">
+                <input type="checkbox" id="manual_lift" name="manual_lift" value="yes">
+                <label for="manual_lift">Подъём строительных лесов ручным способом</label>
+            </div>
+            <div class="form-group">
+                <label for="total_man_hours">Общие чел.-часы:</label>
+                <input type="number" id="total_man_hours" name="total_man_hours">
+            </div>
+            <div class="form-group">
+                <label for="master_name">ФИО мастера:</label>
+                <input type="text" id="master_name" name="master_name">
+            </div>
+            <div class="form-group full-width">
+                <label for="workers">Работники (Фамилия Имя - Часы, каждая с новой строки):</label>
+                <textarea id="workers" name="workers" rows="5"></textarea>
+            </div>
+            <div class="form-group full-width">
+                <label for="brigadier_name">ФИО бригадира:</label>
+                <input type="text" id="brigadier_name" name="brigadier_name">
+            </div>
+            <input type="submit" value="Сгенерировать акт">
+        </form>
+    </div>
+</body>
+</html>
