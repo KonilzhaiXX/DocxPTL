@@ -176,7 +176,8 @@ def generate_actdoc():
         'check_modifikaciya': '✓' if work_type_choice == 'modifikaciya' else ' ',
         'type11': '✓' if les_type == '1.1' else ' ',
         'type21': '✓' if les_type == '2.1' else ' ',
-        'type4': '✓' if les_type == '4' else ' '
+        'type4': '✓' if les_type == '4' else ' ',
+        'type5': '✓',
     }
 
     doc.render(context)
