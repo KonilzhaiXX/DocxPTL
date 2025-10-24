@@ -135,6 +135,7 @@ def generate_actdoc():
         'type11': '✓' if les_type == '1.1' else ' ',
         'type21': '✓' if les_type == '2.1' else ' ',
         'type4': '✓' if les_type == '4' else ' ',
+        'type5': '✓',
         'wrkCount': total_workers,
     }
 
