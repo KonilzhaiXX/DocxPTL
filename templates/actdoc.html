@@ -389,6 +389,7 @@
                         <label for="actSumma">Площадь (S)</label>
                         <input type="number" id="actSumma" name="actSumma" readonly>
                     </div>
+                    <input type="hidden" id="actVem" name="actVem">
                 </div>
             </div>
 
@@ -577,11 +578,14 @@
             const h = parseFloat(document.getElementById('actHeight').value) || 0;
             const v_field = document.getElementById('actV');
             const s_field = document.getElementById('actSumma');
+            const vem_field = document.getElementById('actVem');
 
             v_field.value = '';
             s_field.value = '';
+            vem_field.value = Number.isInteger(a * b * h) ? a * b * h : (a * b * h).toFixed(2);
             v_field.required = false;
             s_field.required = false;
+            vem_field.required = false;
 
             if (!type) return;
 

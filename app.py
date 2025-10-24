@@ -1,6 +1,6 @@
 import io
 from flask import Flask, render_template, request, send_file
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate, RichText
 import os
 from datetime import datetime
 
@@ -39,55 +39,8 @@ CIRCLED_NUMBERS = {
 
 @app.route('/')
 def index():
-    return render_template('index.html')
-
-@app.route('/generate', methods=['POST'])
-def generate_act():
-    doc = DocxTemplate("template.docx")
-    context = request.form.to_dict()
-
-    # Calculations
-    length = float(context.get('length', 0))
-    width = float(context.get('width', 0))
-    height = float(context.get('height', 0))
-    volume_or_area = 0
-    scaffold_type = context.get('scaffold_type')
-    if scaffold_type == 'Тип-1.1':
-        volume_or_area = length * width * height
-    elif scaffold_type == 'Тип-2.1':
-        volume_or_area = length * height
-    elif scaffold_type == 'Тип-4':
-        volume_or_area = length * width
-    
-    context['volume_or_area'] = round(volume_or_area, 2)
-
-    # Checkboxes
-    context['work_type_montaj'] = 'X' if context.get('work_type') == 'монтаж' else '☐'
-    context['work_type_demontaj'] = 'X' if context.get('work_type') == 'демонтаж' else '☐'
-    context['scaffold_type_1_1'] = 'X' if scaffold_type == 'Тип-1.1' else '☐'
-    context['scaffold_type_2_1'] = 'X' if scaffold_type == 'Тип-2.1' else '☐'
-    context['scaffold_type_4'] = 'X' if scaffold_type == 'Тип-4' else '☐'
-    context['manual_lift'] = 'X' if context.get('manual_lift') == 'yes' else '☐'
-
-    # Workers
-    workers_raw = context.get('workers', '')
-    workers = []
-    for line in workers_raw.splitlines():
-        if '-' in line:
-            name, hours = line.split('-', 1)
-            workers.append({'name': name.strip(), 'hours': hours.strip()})
-    context['workers'] = workers
-
-    doc.render(context)
-    generated_file = 'generated_act.docx'
-    doc.save(generated_file)
-    
-    return send_file(generated_file, as_attachment=True)
-
-
-@app.route('/actdoc')
-def actdoc():
     return render_template('actdoc.html')
+
 
 @app.route('/generate_actdoc', methods=['POST'])
 def generate_actdoc():
@@ -104,6 +57,8 @@ def generate_actdoc():
     for name, hour in zip(worker_names, worker_hours):
         if name and hour:
             all_workers.append({'FullName': name, 'hour': hour})
+
+    total_workers = len(all_workers)
 
     # Split workers into four groups
     left_workers = all_workers[0:16]
@@ -143,7 +98,9 @@ def generate_actdoc():
     work_type_circles = {}
     for i in range(1, 21):
         if i == selected_work_number:
-            work_type_circles[i] = CIRCLED_NUMBERS.get(i, str(i))
+            rt = RichText()
+            rt.add(CIRCLED_NUMBERS.get(i, str(i)), bold=True)
+            work_type_circles[i] = rt
         else:
             work_type_circles[i] = str(i)
     # --------------------------------
@@ -161,6 +118,7 @@ def generate_actdoc():
         'actHeight': request.form.get('actHeight') or '',
         'actSumma': request.form.get('actSumma') or '',
         'actV': request.form.get('actV') or '',
+        'actVem': request.form.get('actVem') or '',
         'actH': request.form.get('actH') or '',
         'actHour': request.form.get('actHour') or '',
         'actMaster': request.form.get('actMaster') or '',
@@ -177,7 +135,7 @@ def generate_actdoc():
         'type11': '✓' if les_type == '1.1' else ' ',
         'type21': '✓' if les_type == '2.1' else ' ',
         'type4': '✓' if les_type == '4' else ' ',
-        'type5': '✓',
+        'wrkCount': total_workers,
     }
 
     doc.render(context)
