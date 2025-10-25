@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор актов</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
+            --background-color: #f8f9fa;
+            --form-background: #ffffff;
+            --text-color: #333333;
+            --label-color: #555555;
+            --border-color: #dee2e6;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--form-background);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .form-section {
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            border-radius: 10px;
+            background-color: #fdfdfd;
+        }
+
+        .form-section h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--label-color);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background-color: #fff;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E');
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: .65em auto;
+        }
+
+        /* Styles for radio buttons */
+        .form-group > div {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .form-group > div input[type="radio"] {
+            opacity: 0;
+            position: fixed;
+            width: 0;
+        }
+
+        .form-group > div label {
+            display: flex;
+            align-items: center;
+            padding: 12px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .form-group > div label::before {
+            content: '';
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 15px;
+            background-color: #fff;
+            transition: all 0.3s;
+        }
+
+        .form-group > div input[type="radio"]:checked+label {
+            background-color: #eef5fe;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .form-group > div input[type="radio"]:checked+label::before {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            content: '\2713';
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            line-height: 22px;
+        }
+
+        /* Styles for checkboxes within .radio-group (Тип лесов) */
+        .radio-group {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 15px;
+             margin-top: 10px;
+             padding: 15px;
+             border: 1px solid var(--border-color);
+             border-radius: 8px;
+             background-color: var(--form-background);
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+         }
+
+        .radio-group input[type="checkbox"] {
+            display: none;
+        }
+
+        .radio-group input[type="checkbox"] + label {
+             display: inline-flex;
+             align-items: center;
+             cursor: pointer;
+             padding: 10px 15px;
+             border: 1px solid transparent;
+             border-radius: 5px;
+             background-color: var(--form-background);
+             transition: all 0.3s ease;
+             font-size: 1.1em;
+             min-width: 120px;
+             justify-content: center;
+             color: var(--label-color);
+         }
+
+         .radio-group input[type="checkbox"] + label::before {
+             content: '\2610'; /* Unicode for empty checkbox */
+             display: inline-block;
+             font-size: 1.5em;
+             line-height: 1;
+             margin-right: 8px;
+             color: var(--label-color);
+             transition: all 0.3s ease;
+         }
+
+         .radio-group input[type="checkbox"]:checked + label {
+             background-color: #e0f7fa;
+             border: 1px solid var(--primary-color);
+             color: var(--primary-color);
+             box-shadow: 0 2px 5px rgba(0, 188, 212, 0.2);
+         }
+
+        .radio-group input[type="checkbox"]:checked + label::before {
+            content: '\2611'; /* Unicode for checked checkbox */
+            color: var(--primary-color);
+        }
+
+        .worker-entry {
+            display: grid;
+            grid-template-columns: 30px 1fr 120px auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .worker-index {
+            font-weight: 500;
+            color: var(--label-color);
+        }
+
+        .add-worker-btn,
+        .remove-worker-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .add-worker-btn {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .add-worker-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .remove-worker-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .remove-worker-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, var(--primary-color), #36D1DC);
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .submit-btn:hover {
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .radio-group label {
+            padding: 15px 25px;
+            border-width: 2px;
+            font-size: 18px;
+        }
+
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--primary-color);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Система кэширования данных формы
+        const FormCache = {
+            CACHE_KEY: 'actdoc_form_cache',
+            CACHE_EXPIRY: 24 * 60 * 60 * 1000, // 24 часа в миллисекундах
+            
+            // Сохранение данных в localStorage
+            saveFormData: function() {
+                try {
+                    const formData = this.collectFormData();
+                    const cacheData = {
+                        data: formData,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
+                    console.log('Данные формы сохранены в кэш');
+                } catch (error) {
+                    console.error('Ошибка при сохранении данных в кэш:', error);
+                }
+            },
+            
+            // Загрузка данных из localStorage
+            loadFormData: function() {
+                try {
+                    const cachedData = localStorage.getItem(this.CACHE_KEY);
+                    if (!cachedData) return null;
+                    
+                    const parsedData = JSON.parse(cachedData);
+                    
+                    // Проверка срока действия кэша
+                    if (Date.now() - parsedData.timestamp > this.CACHE_EXPIRY) {
+                        this.clearCache();
+                        return null;
+                    }
+                    
+                    return parsedData.data;
+                } catch (error) {
+                    console.error('Ошибка при загрузке данных из кэша:', error);
+                    return null;
+                }
+            },
+            
+            // Сбор данных из формы
+            collectFormData: function() {
+                const formData = {};
+                
+                // Основные поля формы
+                const fields = [
+                    'actDate', 'actNumber', 'actObject', 'actPosition',
+                    'actDlina', 'actWirina', 'actHeight', 'actV', 'actSumma', 'actVem',
+                    'actHour', 'actMaster', 'actH', 'actLes', 'actBrigadir',
+                    'workType', 'otherWorkTypeInput'
+                ];
+                
+                fields.forEach(fieldId => {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        formData[fieldId] = element.value;
+                    }
+                });
+                
+                // Радиокнопки для типа лесов
+                const lesTypeRadio = document.querySelector('input[name="les_type"]:checked');
+                if (lesTypeRadio) {
+                    formData.les_type = lesTypeRadio.value;
+                }
+                
+                // Радиокнопки для вида работ
+                const workTypeRadio = document.querySelector('input[name="work_type_choice"]:checked');
+                if (workTypeRadio) {
+                    formData.work_type_choice = workTypeRadio.value;
+                }
+                
+                // Состав бригады
+                const workerNames = document.querySelectorAll('input[name="worker_name[]"]');
+                const workerHours = document.querySelectorAll('input[name="worker_hour[]"]');
+                const workers = [];
+                
+                for (let i = 0; i < workerNames.length; i++) {
+                    if (workerNames[i] && workerHours[i]) {
+                        workers.push({
+                            name: workerNames[i].value,
+                            hours: workerHours[i].value
+                        });
+                    }
+                }
+                formData.workers = workers;
+                
+                return formData;
+            },
+            
+            // Восстановление данных в форму
+            restoreFormData: function(data) {
+                if (!data) return;
+                
+                try {
+                    // Восстановление основных полей
+                    const fields = [
+                        'actDate', 'actNumber', 'actObject', 'actPosition',
+                        'actDlina', 'actWirina', 'actHeight', 'actV', 'actSumma', 'actVem',
+                        'actHour', 'actMaster', 'actH', 'actLes', 'actBrigadir',
+                        'workType', 'otherWorkTypeInput'
+                    ];
+                    
+                    fields.forEach(fieldId => {
+                        const element = document.getElementById(fieldId);
+                        if (element && data[fieldId] !== undefined) {
+                            element.value = data[fieldId];
+                        }
+                    });
+                    
+                    // Восстановление радиокнопок для типа лесов
+                    if (data.les_type) {
+                        const lesTypeRadio = document.querySelector(`input[name="les_type"][value="${data.les_type}"]`);
+                        if (lesTypeRadio) {
+                            lesTypeRadio.checked = true;
+                        }
+                    }
+                    
+                    // Восстановление радиокнопок для вида работ
+                    if (data.work_type_choice) {
+                        const workTypeRadio = document.querySelector(`input[name="work_type_choice"][value="${data.work_type_choice}"]`);
+                        if (workTypeRadio) {
+                            workTypeRadio.checked = true;
+                        }
+                    }
+                    
+                    // Восстановление состава бригады
+                    if (data.workers && data.workers.length > 0) {
+                        // Очищаем текущий состав бригады
+                        const container = document.getElementById('workers-container');
+                        container.innerHTML = '';
+                        
+                        // Добавляем работников из кэша
+                        data.workers.forEach((worker, index) => {
+                            const workerDiv = document.createElement('div');
+                            workerDiv.className = 'worker-entry';
+                            workerDiv.innerHTML = `
+                                <span class="worker-index">${index + 1}.</span>
+                                <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${worker.name || ''}" required>
+                                <input type="number" name="worker_hour[]" placeholder="Часы" value="${worker.hours || ''}" required>
+                                <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
+                            `;
+                            container.appendChild(workerDiv);
+                        });
+                    }
+                    
+                    // Проверяем отображение поля "другие работы"
+                    if (data.workType === 'другие') {
+                        checkWorkType('другие');
+                    }
+                    
+                    // Обновляем расчеты
+                    updateCalculations();
+                    
+                    // Показываем уведомление о восстановлении данных
+                    this.showRestoreNotification();
+                    
+                    console.log('Данные формы восстановлены из кэша');
+                } catch (error) {
+                    console.error('Ошибка при восстановлении данных из кэша:', error);
+                }
+            },
+            
+            // Очистка кэша
+            clearCache: function() {
+                try {
+                    localStorage.removeItem(this.CACHE_KEY);
+                    console.log('Кэш очищен');
+                } catch (error) {
+                    console.error('Ошибка при очистке кэша:', error);
+                }
+            },
+            
+            // Показать уведомление о восстановлении данных
+            showRestoreNotification: function() {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background-color: #2ecc71;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    max-width: 300px;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span>✓</span>
+                        <span>Данные восстановлены из кэша</span>
+                        <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px; margin-left: auto;">×</button>
+                    </div>
+                `;
+                
+                // Добавляем стили анимации
+                if (!document.getElementById('cache-notification-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'cache-notification-styles';
+                    style.textContent = `
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(notification);
+                
+                // Автоматически скрыть через 5 секунд
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            },
+            
+            // Инициализируем систему кэширования
+            init: function() {
+                // Восстанавливаем данные при загрузке страницы
+                const cachedData = this.loadFormData();
+                if (cachedData) {
+                    this.restoreFormData(cachedData);
+                }
+                
+                // Добавляем автосохранение при изменении полей
+                this.setupAutoSave();
+                
+                // Добавляем кнопку очистки кэша
+                this.addClearCacheButton();
+            },
+            
+            // Настройка автосохранения
+            setupAutoSave: function() {
+                const form = document.querySelector('form');
+                if (!form) return;
+                
+                // Debounce функция для ограничения частоты сохранения
+                let saveTimeout;
+                const debouncedSave = () => {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        this.saveFormData();
+                    }, 1000); // Сохраняем через 1 секунду после последнего изменения
+                };
+                
+                // Добавляем обработчики событий для всех полей формы
+                form.addEventListener('input', debouncedSave);
+                form.addEventListener('change', debouncedSave);
+                
+                // Специальный обработчик для динамически добавляемых работников
+                const workersContainer = document.getElementById('workers-container');
+                if (workersContainer) {
+                    const observer = new MutationObserver(debouncedSave);
+                    observer.observe(workersContainer, { childList: true, subtree: true });
+                }
+            },
+            
+            // Добавление кнопки очистки кэша
+            addClearCacheButton: function() {
+                const container = document.querySelector('.container');
+                if (!container) return;
+                
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.innerHTML = '🗑️ Очистить сохраненные данные';
+                clearButton.style.cssText = `
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    margin-top: 10px;
+                    transition: background-color 0.3s;
+                `;
+                
+                clearButton.addEventListener('mouseover', function() {
+                    this.style.backgroundColor = '#c0392b';
+                });
+                
+                clearButton.addEventListener('mouseout', function() {
+                    this.style.backgroundColor = '#e74c3c';
+                });
+                
+                clearButton.addEventListener('click', () => {
+                    if (confirm('Вы уверены, что хотите очистить все сохраненные данные?')) {
+                        this.clearCache();
+                        location.reload(); // Перезагружаем страницу для очистки формы
+                    }
+                });
+                
+                // Вставляем кнопку перед формой
+                const form = document.querySelector('form');
+                if (form) {
+                    container.insertBefore(clearButton, form);
+                }
+            }
+        };
+
+        function checkWorkType(value) {
+            var otherWorkTypeDiv = document.getElementById('otherWorkType');
+            var otherWorkTypeInput = document.getElementById('otherWorkTypeInput');
+            if (value === 'другие') {
+                otherWorkTypeDiv.style.opacity = '1';
+            } else {
+                otherWorkTypeDiv.style.opacity = '0';
+                otherWorkTypeInput.value = ''; // Очищаем поле
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Генерация акта выполненных работ</h1>
+        <form action="/generate_actdoc" method="post">
+            <div class="form-section" style="border: 2px solid red;">
+                <h2>Общая информация</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="actDate">Дата акта</label>
+                        <input type="date" id="actDate" name="actDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="actNumber">Номер акта</label>
+                        <input type="number" id="actNumber" name="actNumber" required>
+                    </div>
+                    <div class="form-group">
+                    </div>
+                    <div class="form-group">
+                        <label for="actObject">Объект</label>
+                        <input type="text" id="actObject" name="actObject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="actPosition">Позиция</label>
+                        <input type="text" id="actPosition" name="actPosition" required>
+                    </div>
+                </div>
+            </div>
+            <div class="form-section">
+                <h2>Размеры и объемы</h2>
+                <div class="form-grid">
+                <div class="form-group">
+                        <label for="workType">Виды работ</label>
+                        <select id="workType" name="workType" onchange="checkWorkType(this.value)" required>
+                            <option value="" disabled selected>Выберите вид работы</option>
+                            <option value="Сварка трубы">Сварка трубы</option>
+                            <option value="Сварка м/к">Сварка м/к</option>
+                            <option value="Сварка резервуара">Сварка резервуара</option>
+                            <option value="Монтаж М/К">Монтаж М/К</option>
+                            <option value="Проведение испытаний">Проведение испытаний</option>
+                            <option value="Монтаж изоляции">Монтаж изоляции</option>
+                            <option value="Монтаж кабеля">Монтаж кабеля</option>
+                            <option value="Монтаж лотков">Монтаж лотков</option>
+                            <option value="Монтаж оборудования">Монтаж оборудования</option>
+                            <option value="Монтаж под армирование">Монтаж под армирование</option>
+                            <option value="Монтаж вентиляции">Монтаж вентиляции</option>
+                            <option value="Окраска м/к">Окраска м/к</option>
+                            <option value="Окраска резервуара">Окраска резервуара</option>
+                            <option value="Окраска оборудования">Окраска оборудования</option>
+                            <option value="Абразивная обработка">Абразивная обработка</option>
+                            <option value="Монтаж панелей">Монтаж панелей</option>
+                            <option value="Нанесение ОГЗ">Нанесение ОГЗ</option>
+                            <option value="Окраска трубы">Окраска трубы</option>
+                            <option value="Окраска болтовых соединений">Окраска болтовых соединений</option>
+                            <option value="другие">другие</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="otherWorkType" style="opacity: 0;">
+                        <label for="otherWorkTypeInput">Укажите вид работ</label>
+                        <input type="text" id="otherWorkTypeInput" name="otherWorkTypeInput">
+                    </div>
+                    <div></div> 
+                    <div class="form-group">
+                        <label>Вид работ</label>
+                        <div>
+                            <input type="radio" id="montaj" name="work_type_choice" value="montaj" checked>
+                            <label for="montaj">Монтаж</label>
+                            <input type="radio" id="demontaj" name="work_type_choice" value="demontaj">
+                            <label for="demontaj">Демонтаж</label>
+                            <input type="radio" id="modifikaciya" name="work_type_choice" value="modifikaciya">
+                            <label for="modifikaciya">Модификация</label>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+            <div class="form-section">
+                <h2>Размеры и объемы</h2>
+                <div class="form-grid">
+                <div class="form-group">
+                    <label>Тип лесов</label>
+                    <div>
+                        <input type="radio" id="type1_1" name="les_type" value="1.1" onchange="updateCalculations(); handleCheckbox(this);">
+                        <label for="type1_1">тип-1.1</label>
+                        <input type="radio" id="type2_1" name="les_type" value="2.1" onchange="updateCalculations(); handleCheckbox(this);">
+                        <label for="type2_1">тип-2.1</label>
+                        <input type="radio" id="type4" name="les_type" value="4" onchange="updateCalculations(); handleCheckbox(this);">
+                        <label for="type4">тип-4</label>
+                    </div>
+                </div>
+                 <div class="form-group">
+                        <label for="actH">Отметка монтажа/демонтажа лесов</label>
+                        <input type="number" id="actH" name="actH" required>
+                    </div>
+                </div>               
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="actDlina">Длина (a)</label>
+                        <input type="number" id="actDlina" name="actDlina" step="any" oninput="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="actWirina">Ширина (b)</label>
+                        <input type="number" id="actWirina" name="actWirina" step="any" oninput="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="actHeight">Высота (h)</label>
+                        <input type="number" id="actHeight" name="actHeight" step="any" oninput="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="actV">Объем (V)</label>
+                        <input type="number" id="actV" name="actV" step="any" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="actSumma">Площадь (S)</label>
+                        <input type="number" id="actSumma" name="actSumma" step="any" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="actHour">Часы</label>
+                        <input type="number" id="actHour" name="actHour" required>
+                    </div>
+                    <input type="hidden" id="actVem" name="actVem">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Дополнительная информация</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="actLes">Заказчик лесов</label>
+                        <input type="text" id="actLes" name="actLes" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="actMaster">Мастер</label>
+                        <input type="text" id="actMaster" name="actMaster" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="actBrigadir">Бригадир</label>
+                        <input type="text" id="actBrigadir" name="actBrigadir" required readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Состав бригады</h2>
+            <div id="workers-container">
+                <div class="worker-entry">
+                    <span class="worker-index">1.</span>
+                    <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadirIfEmpty(this)">
+                    <input type="number" name="worker_hour[]" placeholder="Часы" required>
+                    <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
+                </div>
+            </div>
+            <div class="bulk-add-container" style="margin-top: 15px; margin-bottom: 15px;">
+                <textarea id="bulk-workers" placeholder="Введите список работников (формат: ФИО Часы, например: Иванов Иван Иванович 8)" rows="5" style="width: 100%; margin-bottom: 10px;"></textarea>
+                <div style="display: flex; justify-content: space-between;">
+                    <button type="button" class="add-worker-btn" onclick="addBulkWorkers()">Добавить список работников</button>
+                    <button type="button" class="remove-worker-btn" onclick="clearAllWorkers()" style="width: auto; padding: 0 15px;">Очистить состав бригады</button>
+                </div>
+            </div>
+            <button type="button" class="add-worker-btn" onclick="addWorker()">Добавить работника</button>
+            </div>
+
+            <button type="submit" class="submit-btn">Сгенерировать документ</button>
+        </form>
+    </div>
+
+    <div class="spinner-overlay" id="spinner-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем систему кэширования
+            FormCache.init();
+            
+            const form = document.querySelector('form');
+            const spinnerOverlay = document.getElementById('spinner-overlay');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                spinnerOverlay.style.display = 'flex';
+
+                const formData = new FormData(form);
+
+                fetch('/generate_actdoc', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка сети или сервера');
+                    }
+                    const disposition = response.headers.get('Content-Disposition');
+                    let filename = 'act.docx';
+                    if (disposition && disposition.includes('attachment')) {
+                        const filenameMatch = disposition.match(/filename="(.+?)"/);
+                        if (filenameMatch && filenameMatch.length > 1) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    return response.blob().then(blob => ({ blob, filename }));
+                })
+                .then(({ blob, filename }) => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    spinnerOverlay.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Ошибка при генерации документа:', error);
+                    spinnerOverlay.style.display = 'none';
+                    alert('Не удалось сгенерировать документ. Пожалуйста, проверьте консоль для получения дополнительной информации.');
+                });
+            });
+        });
+
+        function handleCheckbox(checkbox) {
+            const checkboxes = document.querySelectorAll('input[name="les_type"]');
+            checkboxes.forEach((cb) => {
+                if (cb !== checkbox) {
+                    cb.checked = false;
+                }
+            });
+        }
+
+        function addWorker() {
+            const container = document.getElementById('workers-container');
+            const newWorker = document.createElement('div');
+            newWorker.className = 'worker-entry';
+            const newIndex = container.children.length + 1;
+            newWorker.innerHTML = `
+                <span class="worker-index">${newIndex}.</span>
+                <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadirIfEmpty(this)">
+                <input type="number" name="worker_hour[]" placeholder="Часы" required>
+                <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
+            `;
+            container.appendChild(newWorker);
+        }
+
+        // Функция для автоматического заполнения поля Бригадир
+        function updateBrigadirIfEmpty(input) {
+            const brigadirField = document.getElementById('actBrigadir');
+            // Проверяем, что поле Бригадир пустое и текущее поле ФИО заполнено
+            if (brigadirField && brigadirField.value.trim() === '' && input.value.trim() !== '') {
+                // Если это первый работник в списке
+                const workerIndex = Array.from(document.querySelectorAll('input[name="worker_name[]"]')).indexOf(input);
+                if (workerIndex === 0) {
+                    brigadirField.value = input.value;
+                }
+            }
+        }
+
+        function removeWorker(button) {
+            const workerEntry = button.parentElement;
+            if (document.querySelectorAll('.worker-entry').length > 1) {
+                workerEntry.remove();
+                updateWorkerIndexes();
+            } else {
+                alert("Должен быть хотя бы один работник.");
+            }
+        }
+
+        function updateWorkerIndexes() {
+        const container = document.getElementById('workers-container');
+        const workers = container.children;
+        for (let i = 0; i < workers.length; i++) {
+            workers[i].querySelector('.worker-index').textContent = `${i + 1}.`;
+        }
+    }
+    
+    function clearAllWorkers() {
+        if (confirm('Вы уверены, что хотите очистить весь состав бригады?')) {
+            const container = document.getElementById('workers-container');
+            // Удаляем всех работников, кроме первого
+            while (container.children.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+            
+            // Очищаем поля первого работника
+            if (container.children.length === 1) {
+                const firstWorker = container.children[0];
+                firstWorker.querySelector('input[name="worker_name[]"]').value = '';
+                firstWorker.querySelector('input[name="worker_hour[]"]').value = '';
+            }
+        }
+    }
+    
+    function addBulkWorkers() {
+        const bulkText = document.getElementById('bulk-workers').value.trim();
+        if (!bulkText) {
+            alert('Пожалуйста, введите список работников');
+            return;
+        }
+        
+        const workerLines = bulkText.split('\n').filter(line => line.trim() !== '');
+        const container = document.getElementById('workers-container');
+        
+        // Если список не пустой, добавляем работников
+        if (workerLines.length > 0) {
+            for (let i = 0; i < workerLines.length; i++) {
+                const workerLine = workerLines[i].trim();
+                if (workerLine) {
+                    // Разделяем строку на части
+                    const parts = workerLine.split(' ');
+                    
+                    // Последнее слово может быть числом часов
+                    let workerHours = 8; // По умолчанию 8 часов
+                    let workerName = workerLine;
+                    
+                    // Проверяем, является ли последнее слово числом
+                    const lastPart = parts[parts.length - 1];
+                    if (!isNaN(lastPart) && lastPart.trim() !== '') {
+                        workerHours = parseInt(lastPart);
+                        // Убираем часы из имени
+                        workerName = parts.slice(0, parts.length - 1).join(' ');
+                    }
+                    
+                    const newWorker = document.createElement('div');
+                    newWorker.className = 'worker-entry';
+                    const newIndex = container.children.length + 1;
+                    
+                    newWorker.innerHTML = `
+                        <span class="worker-index">${newIndex}.</span>
+                        <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${workerName}" required onchange="updateBrigadirIfEmpty(this)">
+                        <input type="number" name="worker_hour[]" placeholder="Часы" value="${workerHours}" required>
+                        <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
+                    `;
+                    
+                    container.appendChild(newWorker);
+                    
+                    // Автоматически заполняем поле бригадира, если это первый работник и поле бригадира пустое
+                    if (container.children.length === 1) {
+                        const brigadirField = document.getElementById('actBrigadir');
+                        if (brigadirField && !brigadirField.value) {
+                            brigadirField.value = workerName;
+                        }
+                    }
+                }
+            }
+            
+            // Очищаем поле ввода после добавления
+            document.getElementById('bulk-workers').value = '';
+        }
+    }
+
+        function updateCalculations() {
+            const type = document.querySelector('input[name="les_type"]:checked');
+            const a = parseFloat(document.getElementById('actDlina').value) || 0;
+            const b = parseFloat(document.getElementById('actWirina').value) || 0;
+            const h = parseFloat(document.getElementById('actHeight').value) || 0;
+            const v_field = document.getElementById('actV');
+            const s_field = document.getElementById('actSumma');
+            const vem_field = document.getElementById('actVem');
+
+            v_field.value = '';
+            s_field.value = '';
+            vem_field.value = Number.isInteger(a * b * h) ? a * b * h : (a * b * h).toFixed(2);
+            v_field.required = false;
+            s_field.required = false;
+            vem_field.required = false;
+
+            if (!type) return;
+
+            let result;
+            if (type.value === '1.1') {
+                result = a * b * h;
+                v_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                v_field.required = true;
+            } else if (type.value === '2.1') {
+                result = a * h;
+                s_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                s_field.required = true;
+            } else if (type.value === '4') {
+                result = a * b;
+                s_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                s_field.required = true;
+            }
+        }
+    </script>
+    </body>
+</html>
