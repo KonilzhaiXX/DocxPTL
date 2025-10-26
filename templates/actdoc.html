@@ -771,7 +771,7 @@
                     
                     <div class="form-group">
                         <label for="actBrigadir">Бригадир</label>
-                        <input type="text" id="actBrigadir" name="actBrigadir" required readonly>
+                        <input type="text" id="actBrigadir" name="actBrigadir" required>
                     </div>
                 </div>
             </div>
@@ -781,7 +781,7 @@
             <div id="workers-container">
                 <div class="worker-entry">
                     <span class="worker-index">1.</span>
-                    <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadirIfEmpty(this)">
+                    <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadir(this)">
                     <input type="number" name="worker_hour[]" placeholder="Часы" required>
                     <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
                 </div>
@@ -872,7 +872,7 @@
             const newIndex = container.children.length + 1;
             newWorker.innerHTML = `
                 <span class="worker-index">${newIndex}.</span>
-                <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadirIfEmpty(this)">
+                <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadir(this)">
                 <input type="number" name="worker_hour[]" placeholder="Часы" required>
                 <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
             `;
@@ -880,15 +880,12 @@
         }
 
         // Функция для автоматического заполнения поля Бригадир
-        function updateBrigadirIfEmpty(input) {
+        function updateBrigadir(input) {
             const brigadirField = document.getElementById('actBrigadir');
-            // Проверяем, что поле Бригадир пустое и текущее поле ФИО заполнено
-            if (brigadirField && brigadirField.value.trim() === '' && input.value.trim() !== '') {
-                // Если это первый работник в списке
-                const workerIndex = Array.from(document.querySelectorAll('input[name="worker_name[]"]')).indexOf(input);
-                if (workerIndex === 0) {
-                    brigadirField.value = input.value;
-                }
+            // Если это первый работник в списке и поле ФИО заполнено
+            const workerIndex = Array.from(document.querySelectorAll('input[name="worker_name[]"]')).indexOf(input);
+            if (workerIndex === 0 && input.value.trim() !== '') {
+                brigadirField.value = input.value;
             }
         }
 
@@ -963,7 +960,7 @@
                     
                     newWorker.innerHTML = `
                         <span class="worker-index">${newIndex}.</span>
-                        <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${workerName}" required onchange="updateBrigadirIfEmpty(this)">
+                        <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${workerName}" required onchange="updateBrigadir(this)">
                         <input type="number" name="worker_hour[]" placeholder="Часы" value="${workerHours}" required>
                         <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
                     `;
