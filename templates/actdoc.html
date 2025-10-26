@@ -778,12 +778,9 @@
 
             <div class="form-section">
                 <h2>Состав бригады</h2>
-            <div id="workers-container">
-                <div class="worker-entry">
-                    <span class="worker-index">1.</span>
-                    <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadir(this)">
-                    <input type="number" name="worker_hour[]" placeholder="Часы" required>
-                    <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
+            <div id="workers-container-wrapper" style="max-height: 400px; overflow-y: auto; margin-bottom: 10px;">
+                <div id="workers-container">
+                    <!-- Контейнер для работников, первый работник будет добавлен при нажатии кнопки "Добавить работника" -->
                 </div>
             </div>
             <div class="bulk-add-container" style="margin-top: 15px; margin-bottom: 15px;">
@@ -877,14 +874,28 @@
                 <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
             `;
             container.appendChild(newWorker);
+            
+            // Если это первый работник, автоматически заполняем поле бригадира
+            if (newIndex === 1) {
+                const brigadirField = document.getElementById('actBrigadir');
+                if (brigadirField && brigadirField.value === '') {
+                    // Добавляем обработчик события для автозаполнения после ввода имени
+                    const nameInput = newWorker.querySelector('input[name="worker_name[]"]');
+                    nameInput.addEventListener('input', function() {
+                        if (this.value.trim() !== '') {
+                            brigadirField.value = this.value;
+                        }
+                    });
+                }
+            }
         }
 
         // Функция для автоматического заполнения поля Бригадир
         function updateBrigadir(input) {
             const brigadirField = document.getElementById('actBrigadir');
             // Если это первый работник в списке и поле ФИО заполнено
-            const workerIndex = Array.from(document.querySelectorAll('input[name="worker_name[]"]')).indexOf(input);
-            if (workerIndex === 0 && input.value.trim() !== '') {
+            const workerInputs = document.querySelectorAll('input[name="worker_name[]"]');
+            if (workerInputs.length > 0 && workerInputs[0] === input && input.value.trim() !== '') {
                 brigadirField.value = input.value;
             }
         }
@@ -892,8 +903,23 @@
         function removeWorker(button) {
             const workerEntry = button.parentElement;
             if (document.querySelectorAll('.worker-entry').length > 1) {
+                // Проверяем, является ли удаляемый работник первым
+                const isFirstWorker = Array.from(document.querySelectorAll('.worker-entry')).indexOf(workerEntry) === 0;
+                const workerName = workerEntry.querySelector('input[name="worker_name[]"]').value;
+                const brigadirField = document.getElementById('actBrigadir');
+                
+                // Удаляем работника
                 workerEntry.remove();
                 updateWorkerIndexes();
+                
+                // Если удаляем первого работника и его имя совпадает с именем бригадира,
+                // обновляем поле бригадира на имя нового первого работника
+                if (isFirstWorker && brigadirField.value === workerName) {
+                    const newFirstWorker = document.querySelector('input[name="worker_name[]"]');
+                    if (newFirstWorker && newFirstWorker.value.trim() !== '') {
+                        brigadirField.value = newFirstWorker.value;
+                    }
+                }
             } else {
                 alert("Должен быть хотя бы один работник.");
             }
@@ -933,6 +959,11 @@
         
         const workerLines = bulkText.split('\n').filter(line => line.trim() !== '');
         const container = document.getElementById('workers-container');
+        
+        // Очищаем контейнер, если в нем есть работники
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
         
         // Если список не пустой, добавляем работников
         if (workerLines.length > 0) {
