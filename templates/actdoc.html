@@ -939,19 +939,20 @@
             for (let i = 0; i < workerLines.length; i++) {
                 const workerLine = workerLines[i].trim();
                 if (workerLine) {
-                    // Разделяем строку на части
-                    const parts = workerLine.split(' ');
+                    // Разделяем строку на части по табуляции или несколько пробелов
+                    const parts = workerLine.split(/\t+|\s{2,}/);
                     
-                    // Последнее слово может быть числом часов
+                    // Первая часть - это ФИО работника
+                    let workerName = parts[0].trim();
                     let workerHours = 8; // По умолчанию 8 часов
-                    let workerName = workerLine;
                     
-                    // Проверяем, является ли последнее слово числом
-                    const lastPart = parts[parts.length - 1];
-                    if (!isNaN(lastPart) && lastPart.trim() !== '') {
-                        workerHours = parseInt(lastPart);
-                        // Убираем часы из имени
-                        workerName = parts.slice(0, parts.length - 1).join(' ');
+                    // Ищем первое числовое значение в остальных частях
+                    for (let j = 1; j < parts.length; j++) {
+                        const hoursPart = parts[j].trim();
+                        if (hoursPart && !isNaN(hoursPart)) {
+                            workerHours = parseInt(hoursPart);
+                            break;
+                        }
                     }
                     
                     const newWorker = document.createElement('div');
@@ -967,10 +968,10 @@
                     
                     container.appendChild(newWorker);
                     
-                    // Автоматически заполняем поле бригадира, если это первый работник и поле бригадира пустое
+                    // Автоматически заполняем поле бригадира, если это первый работник
                     if (container.children.length === 1) {
                         const brigadirField = document.getElementById('actBrigadir');
-                        if (brigadirField && !brigadirField.value) {
+                        if (brigadirField) {
                             brigadirField.value = workerName;
                         }
                     }
