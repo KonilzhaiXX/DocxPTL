@@ -42,6 +42,91 @@ def index():
     return render_template('actdoc.html')
 
 
+@app.route('/generate_tabel', methods=['POST'])
+def generate_tabel():
+    doc = DocxTemplate("tabel.docx")
+    act_date = request.form.get('actDate')
+    # Format date to dd.MM.yyyy
+    from datetime import datetime
+    act_date = datetime.strptime(act_date, '%Y-%m-%d').strftime('%d.%m.%Y')
+    
+    worker_names = request.form.getlist('worker_name[]')
+    worker_hours = request.form.getlist('worker_hour[]')
+
+    all_workers = []
+    for name, hour in zip(worker_names, worker_hours):
+        if name and hour:
+            all_workers.append({'FullName': name, 'hour': hour})
+
+    # Создаем структуру данных для табеля
+    workers_top_left = []
+    workers_top_right = []
+    workers_bottom_left = []
+    workers_bottom_right = []
+    
+    # Распределяем работников по массивам (по 20 в каждом)
+    for i, worker in enumerate(all_workers):
+        if i < 20:
+            workers_top_left.append(worker)
+        elif i < 40:
+            workers_top_right.append(worker)
+        elif i < 60:
+            workers_bottom_left.append(worker)
+        elif i < 80:
+            workers_bottom_right.append(worker)
+    
+    # Дополняем массивы пустыми значениями до 20 элементов
+    while len(workers_top_left) < 20:
+        workers_top_left.append({'FullName': '', 'hour': ''})
+    while len(workers_top_right) < 20:
+        workers_top_right.append({'FullName': '', 'hour': ''})
+    while len(workers_bottom_left) < 20:
+        workers_bottom_left.append({'FullName': '', 'hour': ''})
+    while len(workers_bottom_right) < 20:
+        workers_bottom_right.append({'FullName': '', 'hour': ''})
+    
+    # Создаем пары работников для верхней и нижней части
+    top_paired_workers = []
+    for i in range(20):
+        top_paired_workers.append({
+            'left': workers_top_left[i],
+            'right': workers_top_right[i]
+        })
+
+    bottom_paired_workers = []
+    for i in range(20):
+        bottom_paired_workers.append({
+            'left': workers_bottom_left[i],
+            'right': workers_bottom_right[i]
+        })
+
+    # Формируем контекст для шаблона
+    context = {
+        'actDate': act_date if act_date else '',
+        'actNumber': request.form.get('actNumber') or '',
+        'actBrigadir': request.form.get('actBrigadir') or '',
+        'actDlina': request.form.get('actDlina') or '',
+        'actWirina': request.form.get('actWirina') or '',
+        'actHeight': request.form.get('actHeight') or '',
+        'actSumma': request.form.get('actSumma') or '',
+        'actV': request.form.get('actV') or '',
+        'actMaster': request.form.get('actMaster') or '',
+        'checkMontazh': '✓' if request.form.get('work_type_choice') == 'montaj' else ' ',
+        'checkDeMontazh': '✓' if request.form.get('work_type_choice') == 'demontaj' else ' ',
+        'workers_top': top_paired_workers,
+        'workers_bottom': bottom_paired_workers
+    }
+    
+    doc.render(context)
+    
+    # Создаем поток для сгенерированного файла
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)  # Переходим в начало потока
+    
+    return send_file(file_stream, as_attachment=True, download_name='generated_tabel.docx')
+
+
 @app.route('/generate_actdoc', methods=['POST'])
 def generate_actdoc():
     doc = DocxTemplate("docact.docx")

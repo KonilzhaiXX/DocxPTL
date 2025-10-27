@@ -264,7 +264,6 @@
         }
 
         .submit-btn {
-            background: linear-gradient(45deg, var(--primary-color), #36D1DC);
             color: white;
             padding: 16px;
             border: none;
@@ -793,7 +792,10 @@
             <button type="button" class="add-worker-btn" onclick="addWorker()">Добавить работника</button>
             </div>
 
-            <button type="submit" class="submit-btn">Сгенерировать документ</button>
+            <div style="display: flex; gap: 15px;">
+                <button type="submit" class="submit-btn" style="background-color: var(--primary-color);">Сгенерировать акт</button>
+                <button type="button" class="submit-btn" id="generate-tabel-btn" style="background-color: var(--secondary-color);">Сгенерировать табель</button>
+            </div>
         </form>
     </div>
 
@@ -808,6 +810,74 @@
             
             const form = document.querySelector('form');
             const spinnerOverlay = document.getElementById('spinner-overlay');
+            
+            // Обработчик для кнопки "Сгенерировать табель"
+            const generateTabelBtn = document.getElementById('generate-tabel-btn');
+            generateTabelBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Показываем спиннер загрузки
+                spinnerOverlay.style.display = 'flex';
+                
+                // Собираем данные формы
+                const formData = new FormData(form);
+                
+                // Собираем данные о работниках
+                const workerContainer = document.getElementById('workers-container');
+                const workerEntries = workerContainer.querySelectorAll('.worker-entry');
+                
+                // Очищаем предыдущие данные о работниках
+                const existingWorkerNames = formData.getAll('worker_name[]');
+                const existingWorkerHours = formData.getAll('worker_hour[]');
+                
+                for (let i = 0; i < existingWorkerNames.length; i++) {
+                    formData.delete('worker_name[]');
+                    formData.delete('worker_hour[]');
+                }
+                
+                // Добавляем данные о работниках заново
+                workerEntries.forEach(entry => {
+                    const nameInput = entry.querySelector('input[name="worker_name[]"]');
+                    const hourInput = entry.querySelector('input[name="worker_hour[]"]');
+                    
+                    if (nameInput && hourInput) {
+                        formData.append('worker_name[]', nameInput.value);
+                        formData.append('worker_hour[]', hourInput.value);
+                    }
+                });
+                
+                // Отправляем запрос на сервер
+                fetch('/generate_tabel', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка при генерации табеля');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Создаем ссылку для скачивания файла
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'generated_tabel.docx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Скрываем спиннер загрузки
+                    spinnerOverlay.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Произошла ошибка при генерации табеля: ' + error.message);
+                    spinnerOverlay.style.display = 'none';
+                });
+            });
+            
 
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
