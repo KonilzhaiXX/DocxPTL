@@ -647,7 +647,7 @@
                     </div>
                     <div class="form-group">
                         <label for="actNumber">Номер акта</label>
-                        <input type="number" id="actNumber" name="actNumber" required>
+                        <input type="text" id="actNumber" name="actNumber" required>
                     </div>
                     <div class="form-group">
                     </div>
@@ -724,7 +724,7 @@
                 </div>
                  <div class="form-group">
                         <label for="actH">Отметка монтажа/демонтажа лесов</label>
-                        <input type="number" id="actH" name="actH" required>
+                        <input type="number" id="actH" name="actH" step="any" required>
                     </div>
                 </div>               
                 <div class="form-grid">
@@ -1082,6 +1082,32 @@
         }
     }
 
+        function formatNumber(num) {
+            // Если число целое, возвращаем как есть
+            if (Number.isInteger(num)) {
+                return num.toString();
+            }
+            
+            // Преобразуем число в строку с максимальной точностью
+            let str = num.toString();
+            
+            // Если число не содержит десятичную точку, возвращаем как есть
+            if (!str.includes('.')) {
+                return str;
+            }
+            
+            // Убираем нули в конце после десятичной точки
+            // Но сохраняем все значащие цифры
+            str = str.replace(/\.?0+$/, '');
+            
+            // Если после удаления нулей строка заканчивается точкой, убираем её
+            if (str.endsWith('.')) {
+                str = str.slice(0, -1);
+            }
+            
+            return str;
+        }
+
         function updateCalculations() {
             const type = document.querySelector('input[name="les_type"]:checked');
             const a = parseFloat(document.getElementById('actDlina').value) || 0;
@@ -1093,7 +1119,7 @@
 
             v_field.value = '';
             s_field.value = '';
-            vem_field.value = Number.isInteger(a * b * h) ? a * b * h : (a * b * h).toFixed(2);
+            vem_field.value = '';
             v_field.required = false;
             s_field.required = false;
             vem_field.required = false;
@@ -1103,16 +1129,19 @@
             let result;
             if (type.value === '1.1') {
                 result = a * b * h;
-                v_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                v_field.value = formatNumber(result);
                 v_field.required = true;
+                vem_field.value = formatNumber(result);
             } else if (type.value === '2.1') {
                 result = a * h;
-                s_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                s_field.value = formatNumber(result);
                 s_field.required = true;
+                vem_field.value = formatNumber(result);
             } else if (type.value === '4') {
                 result = a * b;
-                s_field.value = Number.isInteger(result) ? result : result.toFixed(2);
+                s_field.value = formatNumber(result);
                 s_field.required = true;
+                vem_field.value = formatNumber(result);
             }
         }
     </script>
