@@ -3,8 +3,12 @@ from flask import Flask, render_template, request, send_file
 from docxtpl import DocxTemplate, RichText
 import os
 from datetime import datetime
+from functools import lru_cache
 
 app = Flask(__name__)
+
+# Cache for DocxTemplate objects to avoid repeated disk I/O
+_template_cache = {}
 
 # --- Словари для видов работ ---
 WORK_TYPE_TO_NUMBER = {
@@ -37,6 +41,27 @@ CIRCLED_NUMBERS = {
 }
 # --------------------------------
 
+def get_template(template_path):
+    """Get a DocxTemplate object with caching to avoid repeated disk I/O."""
+    if template_path not in _template_cache:
+        _template_cache[template_path] = DocxTemplate(template_path)
+    # Create a new instance from the cached template to avoid state issues
+    return DocxTemplate(template_path)
+
+def pad_list(lst, target_length, fill_value=None):
+    """Efficiently pad a list to target_length with fill_value."""
+    if fill_value is None:
+        fill_value = {'FullName': '', 'hour': ''}
+    current_length = len(lst)
+    if current_length < target_length:
+        lst.extend([fill_value.copy() if isinstance(fill_value, dict) else fill_value 
+                    for _ in range(target_length - current_length)])
+    return lst
+
+def pair_workers(left_workers, right_workers):
+    """Efficiently pair workers from left and right lists."""
+    return [{'left': l, 'right': r} for l, r in zip(left_workers, right_workers)]
+
 @app.route('/')
 def index():
     return render_template('actdoc.html')
@@ -44,61 +69,28 @@ def index():
 
 @app.route('/generate_tabel', methods=['POST'])
 def generate_tabel():
-    doc = DocxTemplate("tabel.docx")
+    doc = get_template("tabel.docx")
     act_date = request.form.get('actDate')
     # Format date to dd.MM.yyyy
-    from datetime import datetime
     act_date = datetime.strptime(act_date, '%Y-%m-%d').strftime('%d.%m.%Y')
     
     worker_names = request.form.getlist('worker_name[]')
     worker_hours = request.form.getlist('worker_hour[]')
 
-    all_workers = []
-    for name, hour in zip(worker_names, worker_hours):
-        if name and hour:
-            all_workers.append({'FullName': name, 'hour': hour})
+    all_workers = [{'FullName': name, 'hour': hour} 
+                   for name, hour in zip(worker_names, worker_hours) 
+                   if name and hour]
 
     # Создаем структуру данных для табеля
-    workers_top_left = []
-    workers_top_right = []
-    workers_bottom_left = []
-    workers_bottom_right = []
-    
     # Распределяем работников по массивам (по 20 в каждом)
-    for i, worker in enumerate(all_workers):
-        if i < 20:
-            workers_top_left.append(worker)
-        elif i < 40:
-            workers_top_right.append(worker)
-        elif i < 60:
-            workers_bottom_left.append(worker)
-        elif i < 80:
-            workers_bottom_right.append(worker)
-    
-    # Дополняем массивы пустыми значениями до 20 элементов
-    while len(workers_top_left) < 20:
-        workers_top_left.append({'FullName': '', 'hour': ''})
-    while len(workers_top_right) < 20:
-        workers_top_right.append({'FullName': '', 'hour': ''})
-    while len(workers_bottom_left) < 20:
-        workers_bottom_left.append({'FullName': '', 'hour': ''})
-    while len(workers_bottom_right) < 20:
-        workers_bottom_right.append({'FullName': '', 'hour': ''})
+    workers_top_left = pad_list(all_workers[0:20], 20)
+    workers_top_right = pad_list(all_workers[20:40], 20)
+    workers_bottom_left = pad_list(all_workers[40:60], 20)
+    workers_bottom_right = pad_list(all_workers[60:80], 20)
     
     # Создаем пары работников для верхней и нижней части
-    top_paired_workers = []
-    for i in range(20):
-        top_paired_workers.append({
-            'left': workers_top_left[i],
-            'right': workers_top_right[i]
-        })
-
-    bottom_paired_workers = []
-    for i in range(20):
-        bottom_paired_workers.append({
-            'left': workers_bottom_left[i],
-            'right': workers_bottom_right[i]
-        })
+    top_paired_workers = pair_workers(workers_top_left, workers_top_right)
+    bottom_paired_workers = pair_workers(workers_bottom_left, workers_bottom_right)
 
     # Формируем контекст для шаблона
     context = {
@@ -129,46 +121,29 @@ def generate_tabel():
 
 @app.route('/generate_actdoc', methods=['POST'])
 def generate_actdoc():
-    doc = DocxTemplate("docact.docx")
+    doc = get_template("docact.docx")
     act_date = request.form.get('actDate')
     # Format date to dd.MM.yyyy
-    from datetime import datetime
     act_date = datetime.strptime(act_date, '%Y-%m-%d').strftime('%d.%m.%Y')
 
     worker_names = request.form.getlist('worker_name[]')
     worker_hours = request.form.getlist('worker_hour[]')
 
-    all_workers = []
-    for name, hour in zip(worker_names, worker_hours):
-        if name and hour:
-            all_workers.append({'FullName': name, 'hour': hour})
+    all_workers = [{'FullName': name, 'hour': hour} 
+                   for name, hour in zip(worker_names, worker_hours) 
+                   if name and hour]
 
     total_workers = len(all_workers)
 
-    # Split workers into four groups
-    left_workers = all_workers[0:16]
-    right_workers = all_workers[16:32]
-    downleft_workers = all_workers[32:48]
-    downright_workers = all_workers[48:64]
-
-    # Pad each list to 16
-    while len(left_workers) < 16:
-        left_workers.append({'FullName': '', 'hour': ''})
-    while len(right_workers) < 16:
-        right_workers.append({'FullName': '', 'hour': ''})
-    while len(downleft_workers) < 16:
-        downleft_workers.append({'FullName': '', 'hour': ''})
-    while len(downright_workers) < 16:
-        downright_workers.append({'FullName': '', 'hour': ''})
+    # Split workers into four groups and pad to 16
+    left_workers = pad_list(all_workers[0:16], 16)
+    right_workers = pad_list(all_workers[16:32], 16)
+    downleft_workers = pad_list(all_workers[32:48], 16)
+    downright_workers = pad_list(all_workers[48:64], 16)
 
     # Create top and bottom pairs
-    top_paired_workers = []
-    for l, r in zip(left_workers, right_workers):
-        top_paired_workers.append({'left': l, 'right': r})
-
-    bottom_paired_workers = []
-    for dl, dr in zip(downleft_workers, downright_workers):
-        bottom_paired_workers.append({'left': dl, 'right': dr})
+    top_paired_workers = pair_workers(left_workers, right_workers)
+    bottom_paired_workers = pair_workers(downleft_workers, downright_workers)
  
     # --- Логика для видов работ ---
     work_type_selection = request.form.get('workType')
