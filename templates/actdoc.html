@@ -314,6 +314,51 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Toast notifications (top-right) */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background-color: #fdecea; /* light red */
+            color: #c0392b; /* dark red */
+            border-left: 4px solid var(--danger-color);
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.25s ease, fadeOut 0.25s ease 4s forwards;
+        }
+
+        .toast.success {
+            background-color: #e9f7ef;
+            color: #1e8449;
+            border-left-color: var(--success-color);
+        }
+
+        .toast .icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
     </style>
     <script>
         // Система кэширования данных формы
@@ -797,6 +842,7 @@
                 <button type="button" class="submit-btn" id="generate-tabel-btn" style="background-color: var(--secondary-color);">Сгенерировать табель</button>
             </div>
         </form>
+    <div id="toast-container" class="toast-container"></div>
     </div>
 
     <div class="spinner-overlay" id="spinner-overlay">
@@ -811,11 +857,57 @@
             const form = document.querySelector('form');
             const spinnerOverlay = document.getElementById('spinner-overlay');
             
+            // Вспомогательные функции валидации часов
+            function getTotalHours() {
+                const totalInput = document.getElementById('actHour');
+                const val = totalInput ? parseFloat(totalInput.value) : 0;
+                return Number.isFinite(val) ? val : 0;
+            }
+
+            function getWorkersHoursSum() {
+                const inputs = document.querySelectorAll('input[name="worker_hour[]"]');
+                let sum = 0;
+                inputs.forEach(inp => {
+                    const v = parseFloat(inp.value);
+                    if (Number.isFinite(v)) sum += v;
+                });
+                return sum;
+            }
+
+            function showToast(message, type = 'error', duration = 4250) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                toast.className = 'toast' + (type === 'success' ? ' success' : '');
+                const icon = type === 'success' ? '✅' : '⚠️';
+                toast.innerHTML = `<span class="icon">${icon}</span><span>${message}</span>`;
+                container.appendChild(toast);
+                setTimeout(() => { toast.remove(); }, duration);
+            }
+
+            function validateTotalHours() {
+                const total = getTotalHours();
+                const sum = getWorkersHoursSum();
+                if (total === sum) {
+                    // Можно показать успех, но по требованию достаточно ошибки
+                    return true;
+                } else {
+                    showToast('Общее количество часов не совпадает с суммой часов работников. Проверьте данные.', 'error');
+                    return false;
+                }
+            }
+
+            // Toast скрывается автоматически; при изменениях повторная проверка выполнится при клике
+
             // Обработчик для кнопки "Сгенерировать табель"
             const generateTabelBtn = document.getElementById('generate-tabel-btn');
             generateTabelBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+                // Валидация часов перед генерацией
+                if (!validateTotalHours()) {
+                    return;
+                }
+
                 // Показываем спиннер загрузки
                 spinnerOverlay.style.display = 'flex';
                 
@@ -881,6 +973,10 @@
 
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
+                // Валидация часов перед генерацией
+                if (!validateTotalHours()) {
+                    return;
+                }
                 spinnerOverlay.style.display = 'flex';
 
                 const formData = new FormData(form);
