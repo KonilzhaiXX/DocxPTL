@@ -678,6 +678,82 @@
             }
         }
     </script>
+    <script>
+        // Оборачиваем в IIFE, чтобы не засорять глобальную область видимости
+        (function (global) {
+            const COEFS = {
+                "1.1": [
+                    { min: 0,   max: 16,  total: 0.88, montaj: 0.59, demontaj: 0.29 },
+                    { min: 16,  max: 32,  total: 0.99, montaj: 0.66, demontaj: 0.33 },
+                    { min: 32,  max: 48,  total: 1.27, montaj: 0.85, demontaj: 0.42 },
+                    { min: 48,  max: 64,  total: 1.27, montaj: 0.85, demontaj: 0.42 },
+                    { min: 64,  max: 80,  total: 1.27, montaj: 0.85, demontaj: 0.42 },
+                    { min: 80,  max: 96,  total: 1.27, montaj: 0.85, demontaj: 0.42 },
+                    { min: 96,  max: Infinity, total: 1.27, montaj: 0.85, demontaj: 0.42 },
+                ],
+                "2.1": [
+                    { min: 0,   max: 16,  total: 1.32, montaj: 0.88, demontaj: 0.44 },
+                    { min: 16,  max: 32,  total: 1.49, montaj: 0.99, demontaj: 0.50 },
+                    { min: 32,  max: 48,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                    { min: 48,  max: 64,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                    { min: 64,  max: 80,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                    { min: 80,  max: 96,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                    { min: 96,  max: Infinity, total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                ],
+                "4": [
+                    { min: 0,   max: 5,   total: 2.74, montaj: 1.83, demонтaj: 0.91 },
+                    { min: 5,   max: 15,  total: 3.07, montaj: 2.05, demонтaj: 1.02 },
+                    { min: 15,  max: 30,  total: 3.56, montaj: 2.37, demонтaj: 1.19 },
+                    { min: 30,  max: 50,  total: 4.05, montaj: 2.70, demонтaj: 1.35 },
+                    { min: 50,  max: 70,  total: 4.05, montaj: 2.70, демонтaj: 1.35 },
+                    { min: 70,  max: 90,  total: 4.05, montaj: 2.70, демонтaj: 1.35 },
+                    { min: 90,  max: Infinity, total: 4.05, montaj: 2.70, демонтaj: 1.35 },
+                ]
+            };
+
+            function normalizeTypeLes(input) {
+                if (input == null) return null;
+                const s = String(input).toLowerCase();
+                const m = s.match(/(\d+(\.\d+)?)/);
+                return m ? m[0] : null;
+            }
+
+            function normalizeWorkType(workType) {
+                if (!workType) return "montaj";
+                const s = String(workType).toLowerCase();
+                if (s.includes("дем") || s.includes("dem")) return "demontaj";
+                if (s.includes("общ") || s.includes("total") || s.includes("obsh")) return "total";
+                return "montaj";
+            }
+
+            function specialCoefficient(typeLes, height, workType) {
+                const t = normalizeTypeLes(typeLes);
+                if (!t) return null;
+                const table = COEFS[t];
+                if (!table) return null;
+
+                const h = Number(height);
+                if (!Number.isFinite(h) || h < 0) return null;
+
+                const wtKey = normalizeWorkType(workType);
+                const row = table.find(r => h >= r.min && h < r.max);
+                if (!row) return null;
+
+                if (wtKey === "montaj") return row.montaj;
+                if (wtKey === "demontaj") return row.demontaj;
+                return row.total;
+            }
+
+            const api = { COEFS, specialCoefficient, normalizeTypeLes, normalizeWorkType };
+
+            // Экспорт в браузер
+            global.CoefUtils = api;
+            // Экспорт для CommonJS (Node)
+            if (typeof module !== "undefined" && module.exports) {
+                module.exports = api;
+            }
+        })(typeof window !== 'undefined' ? window : this);
+    </script>
 </head>
 <body>
     <div class="container">
@@ -817,6 +893,18 @@
                         <label for="actBrigadir">Бригадир</label>
                         <input type="text" id="actBrigadir" name="actBrigadir" required>
                     </div>
+                    <div class="form-group">
+                        <label for="specialCoef">Специальный коэффициент</label>
+                        <input type="text" id="specialCoef" name="specialCoef" readonly placeholder="Автоматически рассчитывается">
+                    </div>
+                    <div class="form-group">
+                        <label for="normHours">Часы по норме</label>
+                        <input type="number" id="normHours" name="normHours" step="any" readonly placeholder="Автоматически рассчитывается">
+                    </div>
+                    <div class="form-group">
+                        <label for="vyrobotka">Выработка</label>
+                        <input type="text" id="vyrobotka" name="vyrobotka" readonly placeholder="Автоматически рассчитывается (в %)">
+                    </div>
                 </div>
             </div>
 
@@ -898,6 +986,101 @@
             }
 
             // Toast скрывается автоматически; при изменениях повторная проверка выполнится при клике
+
+            // === Расчет специального коэффициента ===
+            function mapWorkTypeForCoef(value) {
+                if (!value) return 'montaj';
+                if (value === 'modifikaciya') return 'total';
+                return value; // 'montaj' | 'demontaj'
+            }
+
+            function updateSpecialCoef() {
+                const typeInput = document.querySelector('input[name="les_type"]:checked');
+                const heightInput = document.getElementById('actH');
+                const workTypeInput = document.querySelector('input[name="work_type_choice"]:checked');
+                const output = document.getElementById('specialCoef');
+
+                if (!output) return;
+                const type = typeInput ? typeInput.value : null;
+                const height = heightInput ? parseFloat(heightInput.value) : NaN;
+                const workType = workTypeInput ? mapWorkTypeForCoef(workTypeInput.value) : 'montaj';
+
+                const coef = CoefUtils.specialCoefficient(type, height, workType);
+                // Если коэффициент удалось посчитать — показываем его, иначе оставляем предыдущее значение
+                if (coef != null && Number.isFinite(coef)) {
+                    output.value = formatTwoDecimalsComma(coef);
+                }
+
+                // Пересчитываем часы по норме при изменении коэффициента
+                updateNormHours();
+            }
+
+            // Инициализация и подписки
+            updateSpecialCoef();
+            const lesTypeRadios = document.querySelectorAll('input[name="les_type"]');
+            lesTypeRadios.forEach(r => r.addEventListener('change', updateSpecialCoef));
+            const heightInputEl = document.getElementById('actH');
+            if (heightInputEl) heightInputEl.addEventListener('input', updateSpecialCoef);
+            const workTypeRadios = document.querySelectorAll('input[name="work_type_choice"]');
+            workTypeRadios.forEach(r => r.addEventListener('change', updateSpecialCoef));
+
+            // Пересчет нормочасов по объему/площади * спец.коэффициент
+            function updateNormHours() {
+                const baseStr = document.getElementById('actVem')?.value || '';
+                const base = parseFloat(baseStr);
+                const coefStr = document.getElementById('specialCoef')?.value || '';
+                const coef = parseFloat(coefStr.replace(',', '.'));
+                const output = document.getElementById('normHours');
+                if (!output) return;
+                if (Number.isFinite(base) && Number.isFinite(coef)) {
+                    const value = base * coef;
+                    output.value = formatTwoDecimalsComma(value);
+                }
+                // После пересчёта нормочасов — пересчитать выработку
+                updateVyrobotka();
+            }
+
+            // Подписываемся на изменения расчета размеров
+            const aEl = document.getElementById('actDlina');
+            const bEl = document.getElementById('actWirina');
+            const hEl = document.getElementById('actHeight');
+            [aEl, bEl, hEl].forEach(el => {
+                if (el) el.addEventListener('input', () => {
+                    // updateCalculations уже вызовется через oninput, здесь только пересчет нормочасов
+                    // небольшой таймаут, чтобы дождаться обновления actVem
+                    setTimeout(updateNormHours, 0);
+                });
+            });
+
+            // Форматирование: два знака после запятой, с запятой как разделителем
+            function formatTwoDecimalsComma(num) {
+                if (!Number.isFinite(num)) return '';
+                const rounded = Math.round(num * 100) / 100;
+                return rounded.toFixed(2).replace('.', ',');
+            }
+
+            // === Расчёт выработки: (Часы по норме * 100) / Часы ===
+            function updateVyrobotka() {
+                let normStr = document.getElementById('normHours')?.value || '';
+                const hoursStr = document.getElementById('actHour')?.value || '';
+                // Заменяем запятую на точку для корректного парсинга
+                normStr = normStr.replace(',', '.');
+                const norm = parseFloat(normStr);
+                const hours = parseFloat(hoursStr);
+                const out = document.getElementById('vyrobotka');
+                if (!out) return;
+                if (Number.isFinite(norm) && Number.isFinite(hours) && hours > 0) {
+                    const percent = Math.round((norm * 100) / hours);
+                    out.value = `${percent}%`;
+                }
+            }
+
+            // Пересчитывать выработку при изменении введённых часов
+            const actHourEl = document.getElementById('actHour');
+            if (actHourEl) actHourEl.addEventListener('input', updateVyrobotka);
+
+            // Инициализационный пересчёт
+            setTimeout(() => { updateNormHours(); updateVyrobotka(); }, 0);
 
             // Обработчик для кнопки "Сгенерировать табель"
             const generateTabelBtn = document.getElementById('generate-tabel-btn');
