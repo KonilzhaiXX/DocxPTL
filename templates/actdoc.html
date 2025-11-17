@@ -694,20 +694,20 @@
                 "2.1": [
                     { min: 0,   max: 16,  total: 1.32, montaj: 0.88, demontaj: 0.44 },
                     { min: 16,  max: 32,  total: 1.49, montaj: 0.99, demontaj: 0.50 },
-                    { min: 32,  max: 48,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
-                    { min: 48,  max: 64,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
-                    { min: 64,  max: 80,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
-                    { min: 80,  max: 96,  total: 1.90, montaj: 1.27, demонтaj: 0.63 },
-                    { min: 96,  max: Infinity, total: 1.90, montaj: 1.27, demонтaj: 0.63 },
+                    { min: 32,  max: 48,  total: 1.90, montaj: 1.27, demontaj: 0.63 },
+                    { min: 48,  max: 64,  total: 1.90, montaj: 1.27, demontaj: 0.63 },
+                    { min: 64,  max: 80,  total: 1.90, montaj: 1.27, demontaj: 0.63 },
+                    { min: 80,  max: 96,  total: 1.90, montaj: 1.27, demontaj: 0.63 },
+                    { min: 96,  max: Infinity, total: 1.90, montaj: 1.27, demontaj: 0.63 },
                 ],
                 "4": [
-                    { min: 0,   max: 5,   total: 2.74, montaj: 1.83, demонтaj: 0.91 },
-                    { min: 5,   max: 15,  total: 3.07, montaj: 2.05, demонтaj: 1.02 },
-                    { min: 15,  max: 30,  total: 3.56, montaj: 2.37, demонтaj: 1.19 },
-                    { min: 30,  max: 50,  total: 4.05, montaj: 2.70, demонтaj: 1.35 },
-                    { min: 50,  max: 70,  total: 4.05, montaj: 2.70, демонтaj: 1.35 },
-                    { min: 70,  max: 90,  total: 4.05, montaj: 2.70, демонтaj: 1.35 },
-                    { min: 90,  max: Infinity, total: 4.05, montaj: 2.70, демонтaj: 1.35 },
+                    { min: 0,   max: 5,   total: 2.74, montaj: 1.83, demontaj: 0.91 },
+                    { min: 5,   max: 15,  total: 3.07, montaj: 2.05, demontaj: 1.02 },
+                    { min: 15,  max: 30,  total: 3.56, montaj: 2.37, demontaj: 1.19 },
+                    { min: 30,  max: 50,  total: 4.05, montaj: 2.70, demontaj: 1.35 },
+                    { min: 50,  max: 70,  total: 4.05, montaj: 2.70, demontaj: 1.35 },
+                    { min: 70,  max: 90,  total: 4.05, montaj: 2.70, demontaj: 1.35 },
+                    { min: 90,  max: Infinity, total: 4.05, montaj: 2.70, demontaj: 1.35 },
                 ]
             };
 
@@ -899,7 +899,7 @@
                     </div>
                     <div class="form-group">
                         <label for="normHours">Часы по норме</label>
-                        <input type="number" id="normHours" name="normHours" step="any" readonly placeholder="Автоматически рассчитывается">
+                        <input type="text" id="normHours" name="normHours" readonly placeholder="Автоматически рассчитывается">
                     </div>
                     <div class="form-group">
                         <label for="vyrobotka">Выработка</label>
@@ -996,13 +996,21 @@
 
             function updateSpecialCoef() {
                 const typeInput = document.querySelector('input[name="les_type"]:checked');
-                const heightInput = document.getElementById('actH');
+                const heightInputH = document.getElementById('actH');
+                const heightInputHeight = document.getElementById('actHeight');
                 const workTypeInput = document.querySelector('input[name="work_type_choice"]:checked');
                 const output = document.getElementById('specialCoef');
 
                 if (!output) return;
                 const type = typeInput ? typeInput.value : null;
-                const height = heightInput ? parseFloat(heightInput.value) : NaN;
+                // Берём значение высоты из 'Отметка монтажа/демонтажа' (actH),
+                // если оно введено; иначе из поля 'Высота (h)' (actHeight)
+                let height = NaN;
+                if (heightInputH && heightInputH.value !== '') {
+                    height = parseFloat(heightInputH.value);
+                } else if (heightInputHeight && heightInputHeight.value !== '') {
+                    height = parseFloat(heightInputHeight.value);
+                }
                 const workType = workTypeInput ? mapWorkTypeForCoef(workTypeInput.value) : 'montaj';
 
                 const coef = CoefUtils.specialCoefficient(type, height, workType);
@@ -1019,8 +1027,10 @@
             updateSpecialCoef();
             const lesTypeRadios = document.querySelectorAll('input[name="les_type"]');
             lesTypeRadios.forEach(r => r.addEventListener('change', updateSpecialCoef));
-            const heightInputEl = document.getElementById('actH');
-            if (heightInputEl) heightInputEl.addEventListener('input', updateSpecialCoef);
+            const heightInputElH = document.getElementById('actH');
+            const heightInputElHeight = document.getElementById('actHeight');
+            if (heightInputElH) heightInputElH.addEventListener('input', updateSpecialCoef);
+            if (heightInputElHeight) heightInputElHeight.addEventListener('input', updateSpecialCoef);
             const workTypeRadios = document.querySelectorAll('input[name="work_type_choice"]');
             workTypeRadios.forEach(r => r.addEventListener('change', updateSpecialCoef));
 
@@ -1422,6 +1432,8 @@
                 s_field.required = true;
                 vem_field.value = formatNumber(result);
             }
+            // После обновления объёма/площади — пересчитать нормочасы
+            try { if (typeof updateNormHours === 'function') updateNormHours(); } catch (e) {}
         }
     </script>
     </body>
