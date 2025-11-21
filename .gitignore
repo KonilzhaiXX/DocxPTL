@@ -1,0 +1,39 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment variables / secrets
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+logs/
+gunicorn*.log
+
+# Flask instance folder (if used)
+instance/
+
+# SQLite databases (if any)
+*.sqlite3
+
+# Editors/IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Trae/auxiliary
+.trae/
