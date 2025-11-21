@@ -759,6 +759,17 @@
     <div class="container">
         <h1>Генерация акта выполненных работ</h1>
         <form action="/generate_actdoc" method="post">
+            <div class="form-section">
+                <h2>Автогенерация заполнение формы</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <textarea id="autoFillText" rows="8" placeholder="Вставьте текст для автозаполнения"></textarea>
+                        <div style="margin-top:10px;display:flex;gap:10px;">
+                            <button type="button" class="add-worker-btn" id="autoFillBtn">Автозаполнение</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="form-section" style="border: 2px solid red;">
                 <h2>Общая информация</h2>
                 <div class="form-grid">
@@ -1092,6 +1103,101 @@
             // Инициализационный пересчёт
             setTimeout(() => { updateNormHours(); updateVyrobotka(); }, 0);
 
+            function setValue(id, v) {
+                const el = document.getElementById(id);
+                if (el) el.value = v;
+            }
+            function setRadio(name, v) {
+                const el = document.querySelector(`input[name="${name}"][value="${v}"]`);
+                if (el) el.checked = true;
+            }
+            function parseAutoFill() {
+                const textarea = document.getElementById('autoFillText');
+                if (!textarea) return;
+                const t = textarea.value || '';
+                if (!t.trim()) return;
+                const normalized = t.replace(/\t+/g, '     ').replace(/\r/g, '');
+                const segments = normalized.split(/(?:\s{5,}|\n+)/).map(s => s.trim()).filter(Boolean);
+                if (segments.length) {
+                    const objSeg = segments[0];
+                    if (objSeg) setValue('actObject', objSeg);
+                    const wtSeg = segments[1];
+                    if (wtSeg) {
+                        if (/Демонтаж/i.test(wtSeg)) setRadio('work_type_choice','demontaj');
+                        else if (/Монтаж/i.test(wtSeg)) setRadio('work_type_choice','montaj');
+                        const kmToken = (wtSeg.match(/\b([A-Za-zА-Яа-яЁё]{2,})\b$/) || [])[1];
+                        const posPart = (segments[2] || '').replace(/\s+/g,' ').trim();
+                        const composedPos = [kmToken, posPart].filter(Boolean).join(' ');
+                        if (composedPos) setValue('actPosition', composedPos);
+                    }
+                    const lesSeg = segments[3];
+                    if (lesSeg) setValue('actLes', lesSeg);
+                    const dimsSeg = segments.find(s => /(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)/i.test(s));
+                    if (dimsSeg) {
+                        const dm = dimsSeg.match(/(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)(?:\s*=\s*\d+(?:[\.,]\d+)?)?/i);
+                        if (dm) {
+                            setValue('actDlina', dm[1].replace(',', '.'));
+                            setValue('actWirina', dm[2].replace(',', '.'));
+                            setValue('actHeight', dm[3].replace(',', '.'));
+                            updateCalculations();
+                        }
+                    }
+                    const typeIndex = segments.findIndex(s => /тип[-\s]*[0-9]/i.test(s));
+                    const dimsIndex = segments.findIndex(s => /(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)/i.test(s));
+                    const endIdx = Math.min(...[typeIndex, dimsIndex].filter(i => i >= 0)) >= 0 ? Math.min(typeIndex, dimsIndex) : (dimsIndex >= 0 ? dimsIndex : (typeIndex >= 0 ? typeIndex : segments.length));
+                    for (let i = 0; i < endIdx; i++) {
+                        const s = segments[i];
+                        if (/^\d+(?:[\.,]\d+)?$/.test(s)) { setValue('actHour', s.replace(',', '.')); break; }
+                    }
+                }
+                const objM = t.match(/^\s*(\d+\s+\S+-\S+)/m);
+                if (objM) setValue('actObject', objM[1].trim());
+                if (/Демонтаж/i.test(t)) setRadio('work_type_choice','demontaj');
+                else if (/Монтаж/i.test(t)) setRadio('work_type_choice','montaj');
+                const leftRe = /[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё0-9jJ\.\-]*-\d+(?:[\.,]\d+)?/;
+                const rightRe = /[0-9A-Za-zА-Яа-яЁё]+\/[0-9A-Za-zА-Яа-яЁё\-]+/;
+                const leftExec = leftRe.exec(t);
+                const currentPosVal = document.getElementById('actPosition')?.value || '';
+                if (leftExec && !currentPosVal) {
+                    const afterLeft = t.slice(leftExec.index + leftExec[0].length);
+                    const rightExecLocal = rightRe.exec(afterLeft) || rightRe.exec(t);
+                    if (rightExecLocal) {
+                        const pos = `${leftExec[0].trim()} ${rightExecLocal[0].trim()}`;
+                        setValue('actPosition', pos);
+                    }
+                }
+                if (/СК-АКЗ/.test(t)) setValue('actLes','СК-АКЗ');
+                const hourM = t.match(/СК-АКЗ[^\d]*?(\d+)/);
+                if (hourM) setValue('actHour', hourM[1]);
+                const dims = t.match(/(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)\s*[xх×]\s*(\d+(?:[\.,]\d+)?)(?:\s*=\s*\d+(?:[\.,]\d+)?)?/i);
+                if (dims) {
+                    const a = dims[1].replace(',', '.');
+                    const b = dims[2].replace(',', '.');
+                    const h = dims[3].replace(',', '.');
+                    setValue('actDlina', a);
+                    setValue('actWirina', b);
+                    setValue('actHeight', h);
+                    updateCalculations();
+                }
+                const typeM = t.match(/тип[-\s]*([0-9]+(?:\.[0-9]+)?)/i);
+                if (typeM) setRadio('les_type', typeM[1]);
+                // После выбора типа лесов пересчитать объём/площадь, т.к. от типа зависит формула
+                try { updateCalculations(); } catch (e) {}
+                let idxAfterType = -1;
+                const typeAll = [...t.matchAll(/тип[-\s]*([0-9]+(?:\.[0-9]+)?)/ig)];
+                if (typeAll.length) {
+                    const last = typeAll[typeAll.length - 1];
+                    idxAfterType = last.index + last[0].length;
+                }
+                const tail = idxAfterType >= 0 ? t.slice(idxAfterType) : t;
+                const tailNums = [...tail.matchAll(/\d+(?:-\d+)?(?:\/\d+)?/g)];
+                if (tailNums.length) setValue('actNumber', tailNums[tailNums.length - 1][0]);
+                updateSpecialCoef();
+                setTimeout(() => { updateNormHours(); updateVyrobotka(); }, 0);
+            }
+            const autoBtn = document.getElementById('autoFillBtn');
+            if (autoBtn) autoBtn.addEventListener('click', parseAutoFill);
+
             // Обработчик для кнопки "Сгенерировать табель"
             const generateTabelBtn = document.getElementById('generate-tabel-btn');
             generateTabelBtn.addEventListener('click', function(e) {
@@ -1399,9 +1505,9 @@
 
         function updateCalculations() {
             const type = document.querySelector('input[name="les_type"]:checked');
-            const a = parseFloat(document.getElementById('actDlina').value) || 0;
-            const b = parseFloat(document.getElementById('actWirina').value) || 0;
-            const h = parseFloat(document.getElementById('actHeight').value) || 0;
+            const a = parseFloat((document.getElementById('actDlina').value || '').replace(',', '.')) || 0;
+            const b = parseFloat((document.getElementById('actWirina').value || '').replace(',', '.')) || 0;
+            const h = parseFloat((document.getElementById('actHeight').value || '').replace(',', '.')) || 0;
             const v_field = document.getElementById('actV');
             const s_field = document.getElementById('actSumma');
             const vem_field = document.getElementById('actVem');
