@@ -222,6 +222,7 @@ def generate_actdoc():
         'type4': '✓' if les_type == '4' else ' ',
         'type5': '✓',
         'wrkCount': total_workers,
+        'boss': request.form.get('boss') or ''
     }
 
     doc.render(context)

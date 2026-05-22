@@ -411,7 +411,7 @@
                     'actDate', 'actNumber', 'actObject', 'actPosition',
                     'actDlina', 'actWirina', 'actHeight', 'actV', 'actSumma', 'actVem',
                     'actHour', 'actMaster', 'actH', 'actLes', 'actBrigadir',
-                    'workType', 'otherWorkTypeInput'
+                    'workType', 'otherWorkTypeInput', 'boss'
                 ];
                 
                 fields.forEach(fieldId => {
@@ -461,7 +461,7 @@
                         'actDate', 'actNumber', 'actObject', 'actPosition',
                         'actDlina', 'actWirina', 'actHeight', 'actV', 'actSumma', 'actVem',
                         'actHour', 'actMaster', 'actH', 'actLes', 'actBrigadir',
-                        'workType', 'otherWorkTypeInput'
+                        'workType', 'otherWorkTypeInput', 'boss'
                     ];
                     
                     fields.forEach(fieldId => {
@@ -500,7 +500,7 @@
                             workerDiv.innerHTML = `
                                 <span class="worker-index">${index + 1}.</span>
                                 <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${worker.name || ''}" required>
-                                <input type="number" name="worker_hour[]" placeholder="Часы" value="${worker.hours || ''}" required>
+                                <input type="text" name="worker_hour[]" placeholder="Часы" value="${worker.hours || ''}" required>
                                 <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
                             `;
                             container.appendChild(workerDiv);
@@ -526,13 +526,39 @@
             
             // Очистка кэша
             clearCache: function() {
-                try {
-                    localStorage.removeItem(this.CACHE_KEY);
-                    console.log('Кэш очищен');
-                } catch (error) {
-                    console.error('Ошибка при очистке кэша:', error);
+    try {
+        // 1. Достаём текущий кэш и запоминаем boss
+        const cachedData = localStorage.getItem(this.CACHE_KEY);
+        let bossValue = null;
+        
+        if (cachedData) {
+            try {
+                const parsed = JSON.parse(cachedData);
+                if (parsed && parsed.data && parsed.data.boss !== undefined) {
+                    bossValue = parsed.data.boss;
                 }
-            },
+            } catch (e) {
+                // битый кэш — игнорируем
+            }
+        }
+        
+        // 2. Удаляем кэш целиком
+        localStorage.removeItem(this.CACHE_KEY);
+        
+        // 3. Если был boss — записываем обратно только его
+        if (bossValue !== null && bossValue !== '') {
+            const newCache = {
+                data: { boss: bossValue },
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.CACHE_KEY, JSON.stringify(newCache));
+        }
+        
+        console.log('Кэш очищен, поле boss сохранено');
+    } catch (error) {
+        console.error('Ошибка при очистке кэша:', error);
+    }
+},
             
             // Показать уведомление о восстановлении данных
             showRestoreNotification: function() {
@@ -874,15 +900,15 @@
                     </div>
                     <div class="form-group">
                         <label for="actV">Объем (V)</label>
-                        <input type="number" id="actV" name="actV" step="any" readonly>
+                        <input type="text" id="actV" name="actV" readonly>
                     </div>
                     <div class="form-group">
                         <label for="actSumma">Площадь (S)</label>
-                        <input type="number" id="actSumma" name="actSumma" step="any" readonly>
+                        <input type="text" id="actSumma" name="actSumma" readonly>
                     </div>
                     <div class="form-group">
                         <label for="actHour">Часы</label>
-                        <input type="number" id="actHour" name="actHour" required>
+                        <input type="text" id="actHour" name="actHour" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" required>
                     </div>
                     <input type="hidden" id="actVem" name="actVem">
                 </div>
@@ -917,6 +943,13 @@
                         <input type="text" id="vyrobotka" name="vyrobotka" readonly placeholder="Автоматически рассчитывается (в %)">
                     </div>
                 </div>
+                                <div class="form-grid" style="margin-top: 10px;">
+
+                <div class="form-group">
+                        <label for="boss">Начальник участка</label>
+                        <input type="text" id="boss" name="boss" placeholder="Начальник участка" autocomplete="off" required>
+                    </div>
+                    </div>
             </div>
 
             <div class="form-section">
@@ -959,7 +992,8 @@
             // Вспомогательные функции валидации часов
             function getTotalHours() {
                 const totalInput = document.getElementById('actHour');
-                const val = totalInput ? parseFloat(totalInput.value) : 0;
+                const raw = totalInput ? totalInput.value.replace(',', '.') : '';
+                const val = parseFloat(raw);
                 return Number.isFinite(val) ? val : 0;
             }
 
@@ -967,7 +1001,7 @@
                 const inputs = document.querySelectorAll('input[name="worker_hour[]"]');
                 let sum = 0;
                 inputs.forEach(inp => {
-                    const v = parseFloat(inp.value);
+                    const v = parseFloat((inp.value || '').replace(',', '.'));
                     if (Number.isFinite(v)) sum += v;
                 });
                 return sum;
@@ -987,7 +1021,7 @@
             function validateTotalHours() {
                 const total = getTotalHours();
                 const sum = getWorkersHoursSum();
-                if (total === sum) {
+                if (Math.abs(total - sum) < 0.001) {
                     // Можно показать успех, но по требованию достаточно ошибки
                     return true;
                 } else {
@@ -1047,7 +1081,7 @@
 
             // Пересчет нормочасов по объему/площади * спец.коэффициент
             function updateNormHours() {
-                const baseStr = document.getElementById('actVem')?.value || '';
+                const baseStr = (document.getElementById('actVem')?.value || '').replace(',', '.');
                 const base = parseFloat(baseStr);
                 const coefStr = document.getElementById('specialCoef')?.value || '';
                 const coef = parseFloat(coefStr.replace(',', '.'));
@@ -1083,7 +1117,7 @@
             // === Расчёт выработки: (Часы по норме * 100) / Часы ===
             function updateVyrobotka() {
                 let normStr = document.getElementById('normHours')?.value || '';
-                const hoursStr = document.getElementById('actHour')?.value || '';
+                const hoursStr = (document.getElementById('actHour')?.value || '').replace(',', '.');
                 // Заменяем запятую на точку для корректного парсинга
                 normStr = normStr.replace(',', '.');
                 const norm = parseFloat(normStr);
@@ -1190,7 +1224,7 @@
                     idxAfterType = last.index + last[0].length;
                 }
                 const tail = idxAfterType >= 0 ? t.slice(idxAfterType) : t;
-                const tailNums = [...tail.matchAll(/\d+(?:-\d+)?(?:\/\d+)?/g)];
+                const tailNums = [...tail.matchAll(/\d+(?:[-/]\d+)*/g)];
                 if (tailNums.length) setValue('actNumber', tailNums[tailNums.length - 1][0]);
                 updateSpecialCoef();
                 setTimeout(() => { updateNormHours(); updateVyrobotka(); }, 0);
@@ -1335,7 +1369,7 @@
             newWorker.innerHTML = `
                 <span class="worker-index">${newIndex}.</span>
                 <input type="text" name="worker_name[]" placeholder="ФИО работника" required onchange="updateBrigadir(this)">
-                <input type="number" name="worker_hour[]" placeholder="Часы" required>
+                <input type="text" name="worker_hour[]" placeholder="Часы" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" required>
                 <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
             `;
             container.appendChild(newWorker);
@@ -1435,17 +1469,17 @@
             for (let i = 0; i < workerLines.length; i++) {
                 const workerLine = workerLines[i].trim();
                 if (workerLine) {
-                    // Находим все числа в строке
-                    const numbers = workerLine.match(/\d+/g) || [];
-                    let workerHours = 8; // По умолчанию 8 часов
-                    
-                    // Если есть числа, берем последнее
+                    // Находим все числа в строке (в т.ч. дробные с запятой или точкой)
+                    const numbers = workerLine.match(/\d+(?:[.,]\d+)?/g) || [];
+                    let workerHours = '8'; // По умолчанию 8 часов
+
+                    // Если есть числа, берём последнее как часы — как есть, с запятой или точкой
                     if (numbers.length > 0) {
-                        workerHours = parseInt(numbers[numbers.length - 1]);
+                        workerHours = numbers[numbers.length - 1];
                     }
-                    
+
                     // Удаляем все числа из строки для получения имени
-                    let workerName = workerLine.replace(/\d+/g, '').trim();
+                    let workerName = workerLine.replace(/\d+(?:[.,]\d+)?/g, '').trim();
                     // Удаляем лишние пробелы
                     workerName = workerName.replace(/\s+/g, ' ');
                     
@@ -1456,7 +1490,7 @@
                     newWorker.innerHTML = `
                         <span class="worker-index">${newIndex}.</span>
                         <input type="text" name="worker_name[]" placeholder="ФИО работника" value="${workerName}" required onchange="updateBrigadir(this)">
-                        <input type="number" name="worker_hour[]" placeholder="Часы" value="${workerHours}" required>
+                        <input type="text" name="worker_hour[]" placeholder="Часы" value="${workerHours}" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" required>
                         <button type="button" class="remove-worker-btn" onclick="removeWorker(this)">Удалить</button>
                     `;
                     
@@ -1478,29 +1512,18 @@
     }
 
         function formatNumber(num) {
-            // Если число целое, возвращаем как есть
-            if (Number.isInteger(num)) {
-                return num.toString();
+            if (!Number.isFinite(num)) return '';
+
+            // Округляем до ближайшего значения, не более 3 знаков после запятой
+            const rounded = Math.round(num * 1000) / 1000;
+
+            // Целое число возвращаем без дробной части
+            if (Number.isInteger(rounded)) {
+                return rounded.toString();
             }
-            
-            // Преобразуем число в строку с максимальной точностью
-            let str = num.toString();
-            
-            // Если число не содержит десятичную точку, возвращаем как есть
-            if (!str.includes('.')) {
-                return str;
-            }
-            
-            // Убираем нули в конце после десятичной точки
-            // Но сохраняем все значащие цифры
-            str = str.replace(/\.?0+$/, '');
-            
-            // Если после удаления нулей строка заканчивается точкой, убираем её
-            if (str.endsWith('.')) {
-                str = str.slice(0, -1);
-            }
-            
-            return str;
+
+            // Дробное число: 2-3 значащие цифры, лишние нули убираем, разделитель — запятая
+            return rounded.toFixed(3).replace(/\.?0+$/, '').replace('.', ',');
         }
 
         function updateCalculations() {
