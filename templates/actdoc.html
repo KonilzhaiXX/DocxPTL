@@ -783,6 +783,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="logout-link" style="text-align: right;">
+            <a href="{{ url_for('logout') }}">Выйти</a>
+        </div>
         <h1>Генерация акта выполненных работ</h1>
         <form action="/generate_actdoc" method="post">
             <div class="form-section">

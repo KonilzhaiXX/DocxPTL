@@ -1,10 +1,15 @@
 import io
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, session, redirect, url_for
 from docxtpl import DocxTemplate, RichText
 import os
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "aaHdf@123456"  # Секретный ключ для сессий
+
+users = {
+    "erkebulan": "jkLdfvWE@234",
+}
 
 # --- Словари для видов работ ---
 WORK_TYPE_TO_NUMBER = {
@@ -39,11 +44,45 @@ CIRCLED_NUMBERS = {
 
 @app.route('/')
 def index():
-    return render_template('actdoc.html')
+    if "username" not in session:
+        return redirect(url_for("login"))
+    return render_template('actdoc.html', username=session["username"])
 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        if username in users and users[username] == password:
+            session["username"] = username
+            return redirect(url_for("index"))
+
+        error = "Неверный логин или пароль"
+
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    session.clear()
+    return redirect(url_for("login"))
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.route('/generate_tabel', methods=['POST'])
 def generate_tabel():
+    if "username" not in session:
+        return redirect(url_for("login"))
     doc = DocxTemplate("tabel.docx")
     act_date = request.form.get('actDate')
     # Format date to dd.MM.yyyy
@@ -129,6 +168,8 @@ def generate_tabel():
 
 @app.route('/generate_actdoc', methods=['POST'])
 def generate_actdoc():
+    if "username" not in session:
+        return redirect(url_for("login"))
     doc = DocxTemplate("docact.docx")
     act_date = request.form.get('actDate')
     # Format date to dd.MM.yyyy
